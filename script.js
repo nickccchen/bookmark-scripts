@@ -37,6 +37,7 @@
     ];
 
     let stopFlag = false;
+
     $(document).keydown(function (e) {
         if (e.key === "Escape") {
             stopFlag = true;
@@ -44,15 +45,29 @@
         }
     });
 
+    function waitXHR(urlPart) {
+        return new Promise(resolve => {
+            const handler = (event, xhr, settings) => {
+                if (settings.url.includes(urlPart)) {
+                    $(document).off('ajaxComplete', handler);
+                    resolve();
+                }
+            };
+            $(document).ajaxComplete(handler);
+        });
+    }
+
     async function setDropdown(value) {
         $("#ddlConditionCityplan").val(value).trigger("chosen:updated").change();
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await waitXHR('datahandler.ashx');
+        await new Promise(resolve => setTimeout(resolve, 500)); // 額外短暫等待確保選單更新完成
     }
 
     async function fetchSubZones(plan, idx) {
-        const data = Array.from($("#ddlConditionUse option")).map(opt => opt.text).filter(t => t.trim());
-        const content = data.join("\n");
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const options = $("#ddlConditionUse option").map((_, opt) => $(opt).text().trim()).get();
+        if (options.length === 0) throw new Error("XHR response empty or failed");
+
+        const blob = new Blob([options.join("\n")], { type: 'text/plain;charset=utf-8' });
         const fileName = `${String(idx + 1).padStart(2, '0')} ${plan}-使用分區.txt`;
 
         const url = URL.createObjectURL(blob);
@@ -65,10 +80,16 @@
 
     for (let i = 0; i < plans.length; i++) {
         if (stopFlag) break;
-        
-        await setDropdown(plans[i]);
-        await fetchSubZones(plans[i], i);
-        console.log(`✅ 已完成 ${plans[i]} 的資料擷取與存檔 (${i + 1}/${plans.length})`);
+
+        try {
+            await setDropdown(plans[i]);
+            await fetchSubZones(plans[i], i);
+            console.log(`✅ 已完成 ${plans[i]} 的資料擷取與存檔 (${i + 1}/${plans.length})`);
+        } catch (error) {
+            console.error(`⚠️ 發生錯誤於：${plans[i]}，錯誤內容：${error.message}`);
+            alert(`⚠️ 發生錯誤於：${plans[i]}，錯誤內容：${error.message}`);
+            break; // 避免持續發生錯誤，及時中斷
+        }
     }
 
     if (!stopFlag) alert("🎉 全部資料擷取與存檔已完成！");
