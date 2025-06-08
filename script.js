@@ -1,3 +1,7 @@
+require(["esri/config"], function(esriConfig) {
+  esriConfig.defaults.io.corsEnabledServers.push("urplanning.tycg.gov.tw");
+});
+
 (async function () {
     const plans = [
         "全市",
