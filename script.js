@@ -10,7 +10,7 @@ $(document).keydown(function(e){
     }
 });
 
-// 明確的value設定都市計畫區選項
+// 直接使用明確的value設定都市計畫區選項
 const cityPlanOptions = [
     { value: "all,all", name: "01 全市" },
     { value: "02,01", name: "02 八德(八德地區)都市計畫" },
@@ -54,14 +54,7 @@ function setCityPlanOption(index) {
     if (stopFlag) return;
     const option = cityPlanOptions[index];
 
-    const selectElement = $('#ddlConditionCityplan');
-
-    if(selectElement.find(`option[value="${option.value}"]`).length === 0){
-        alert(`❌ 找不到選項:${option.value}`);
-        return;
-    }
-
-    selectElement
+    $('#ddlConditionCityplan')
         .val(option.value)
         .trigger('chosen:updated')
         .change();
@@ -114,7 +107,5 @@ $(document).ajaxError(function(event, xhr, settings) {
     }
 });
 
-// 等待網頁與Chosen初始化完成後，再執行
-$(document).ready(function(){
-    setTimeout(() => setCityPlanOption(currentIndex), 3000);
-});
+// 開始執行
+setCityPlanOption(currentIndex);
